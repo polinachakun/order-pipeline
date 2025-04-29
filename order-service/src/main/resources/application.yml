@@ -1,0 +1,64 @@
+server:
+  port: 8092
+
+spring:
+  application:
+    name: order-service
+  docker:
+    compose:
+      enabled: false
+
+# custom configuration via Configuration files
+kafka:
+
+  general:
+    bootstrap-servers: localhost:9092
+
+  orders:
+    topic: newOrdersTopic
+    group-id: order-group
+  ordersStatusUpdate:
+    topic: ordersStatusUpdateTopic
+    group-id: order-group
+  orderServiceStatusUpdate:
+    topic: ordersStatusUpdateTopic
+    group-id: order-group
+  factory:
+    topic: stockAddedTopic
+    group-id: order-group
+  itemRequest:
+    topic: itemRequestTopic
+    group-id: order-group
+
+warehouse:
+  service:
+    url: http://localhost:8082
+
+camunda:
+  bpm:
+    admin-user:
+      id: admin
+      password: admin
+      firstName: Admin
+    database:
+      type: h2
+    filter:
+      create: All tasks
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+
+
+#  datasource:
+#    url: jdbc:h2:mem:camunda;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+#    driverClassName: org.h2.Driver
+#    username: sa
+#    password:
+#
+#    jpa:
+#      database-platform: org.hibernate.dialect.H2Dialect
+#      hibernate:
+#        ddl-auto: update

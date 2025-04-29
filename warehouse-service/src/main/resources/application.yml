@@ -1,0 +1,37 @@
+server:
+  port: 8082
+
+#spring:
+#  docker:
+#    compose:
+#      enabled: false
+
+# custom configuration via Configuration files
+kafka:
+  general:
+    bootstrap-servers: localhost:9092
+
+  orders:
+    topic: newOrdersTopic
+    group-id: primaryGroup
+
+  ordersStatusUpdate:
+    topic: ordersStatusUpdateTopic
+    group-id: primaryGroup
+
+  factory:
+    topic: stockAddedTopic
+    group-id: primaryGroup
+
+  itemRequest:
+    topic: itemRequestTopic
+    group-id: primaryGroup
+
+
+delivery:
+  service:
+    url: http://localhost:8083/delivery
+#
+#logging:
+#  level:
+#    com.example.warehouseservice: INFO

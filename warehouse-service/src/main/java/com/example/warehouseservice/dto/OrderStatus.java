@@ -1,0 +1,16 @@
+package com.example.warehouseservice.dto;
+
+public enum OrderStatus {
+    CREATED,
+    READY_FOR_PICKING,
+    FULFILLMENT,
+    PARTIALLY_FULFILLMENT,
+    ITEM_REQUEST,
+    READY_FOR_PACKING,
+    PACKED,
+    SENT_TO_DELIVERY,
+
+    DELIVERY_FAILED,
+
+    DELIVERY_FAILED_ORDER_CANCELLED
+}

@@ -1,0 +1,18 @@
+server:
+  port: 8083
+
+# custom configuration via Configuration files
+kafka:
+  general:
+    bootstrap-servers: localhost:9092
+
+  ordersStatusUpdate:
+    order-service-topic: orderServiceStatusUpdateTopic
+    warehouse-service-topic: ordersStatusUpdateTopic
+    group-id: primaryGroup
+
+
+warehouse:
+  service:
+    url: http://localhost:8084  # Updated to match the warehouse service port
+
