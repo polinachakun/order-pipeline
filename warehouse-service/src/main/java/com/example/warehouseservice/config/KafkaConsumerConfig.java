@@ -49,6 +49,8 @@ public class KafkaConsumerConfig {
         mappings.put(
                 "com.example.dto.ItemDto",
                 com.example.warehouseservice.dto.ItemDto.class);
+        mappings.put("com.example.factoryservice.dto.ItemDto",
+                com.example.warehouseservice.dto.ItemDto.class);
 
         DefaultJackson2JavaTypeMapper typeMapper = new DefaultJackson2JavaTypeMapper();
         typeMapper.setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence.TYPE_ID);

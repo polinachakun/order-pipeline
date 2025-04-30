@@ -1,4 +1,4 @@
-package com.example.config;
+package com.example.factoryservice.config;
 
 import lombok.Getter;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -11,10 +11,10 @@ import org.springframework.kafka.config.TopicBuilder;
 @Getter
 public class KafkaTopicConfig {
 
-    @Value("${kafka.stockAddedTopic.factory-service-topic}")
+    @Value("${kafka.stockAdded.topic}")
     private String stockAddedTopicName;
 
-    @Value("${kafka.itemRequestTopic.warehouse-service-topic}")
+    @Value("${kafka.itemRequest.topic}")
     private String itemRequestTopicName;
 
     @Bean

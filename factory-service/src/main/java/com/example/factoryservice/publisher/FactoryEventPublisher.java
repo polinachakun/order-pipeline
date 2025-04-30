@@ -1,8 +1,8 @@
-package com.example.publisher;
+package com.example.factoryservice.publisher;
 
-import com.example.config.KafkaTopicConfig;
-import com.example.dto.AbstractDto;
-import com.example.dto.ItemDto;
+import com.example.factoryservice.config.KafkaTopicConfig;
+import com.example.factoryservice.dto.AbstractDto;
+import com.example.factoryservice.dto.ItemDto;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;

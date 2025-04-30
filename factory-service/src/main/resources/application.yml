@@ -4,15 +4,13 @@ server:
 kafka:
   general:
     bootstrap-servers: localhost:9092
-  stockAddedTopic:
-    factory-service-topic: stockAddedTopic
-  itemRequestTopic:
-    warehouse-service-topic: itemRequestTopic
+
+  itemRequest:
+    topic: itemRequestTopic
+    group-id: factoryGroup
+
+  stockAdded:
+    topic: stockAddedTopic
 
 factory:
-  replenish-interval-ms: 5000
-
-
-#warehouse:
-#  service:
-#    url: http://localhost:8082/warehouse
+  replenish-interval-ms: 5000000

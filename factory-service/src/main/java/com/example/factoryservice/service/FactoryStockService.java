@@ -1,6 +1,6 @@
-package com.example.service;
+package com.example.factoryservice.service;
 
-import com.example.dto.ItemDto;
+import com.example.factoryservice.dto.ItemDto;
 
 public interface FactoryStockService {
 

@@ -1,7 +1,7 @@
-package com.example.service;
+package com.example.factoryservice.service;
 
-import com.example.dto.ItemDto;
-import com.example.publisher.FactoryEventPublisher;
+import com.example.factoryservice.dto.ItemDto;
+import com.example.factoryservice.publisher.FactoryEventPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

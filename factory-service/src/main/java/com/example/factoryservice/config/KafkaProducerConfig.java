@@ -1,6 +1,6 @@
-package com.example.config;
+package com.example.factoryservice.config;
 
-import com.example.dto.AbstractDto;
+import com.example.factoryservice.dto.AbstractDto;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
