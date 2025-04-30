@@ -1,0 +1,104 @@
+@startuml
+actor User
+participant "Order Service" as Order
+participant "Event Bus" as EB
+participant "Warehouse Service" as Warehouse
+participant "Factory Service" as Factory
+participant "Delivery Service" as Delivery
+
+' --- Stage 1: New Order Creation ---
+User -> Order: Create new order\n(items, deliveryLocation, totalPrice, etc.)
+activate Order
+Order -> Order: Prepare new order, set status = CREATED
+Order -> Order: Save order internally
+Order -> EB: (Optional) Publish "orderCreated" \n(orderId, items)
+deactivate Order
+
+' --- Stage 2: Warehouse Fulfillment (Orchestrated by Order) ---
+Order -> Warehouse: requestFulfillment(orderId, items)
+activate Warehouse
+Warehouse -> Warehouse: Attempt fulfillment (check stock)
+
+alt Happy Flow (All Items Available)
+    Warehouse -> Warehouse: Deduct stock, pick items
+    Warehouse -> Order: fulfillmentSuccess(orderId)
+    deactivate Warehouse
+    activate Order
+    Order -> Order: Update status = FULFILLMENT_SUCCESS
+    Order -> EB: (Optional) Publish\n"FULFILLMENT_SUCCESS" (orderId)
+    deactivate Order
+
+    Order -> Warehouse: requestPacking(orderId)
+    activate Warehouse
+    Warehouse -> Warehouse: Package items
+    Warehouse -> Order: packingComplete(orderId)
+    deactivate Warehouse
+    activate Order
+    Order -> Order: Update status = PACKED
+    Order -> EB: (Optional) Publish\n"PACKED" (orderId)
+    deactivate Order
+
+    Order -> Warehouse: markReadyForDelivery(orderId)
+    activate Warehouse
+    Warehouse -> Order: readyForDelivery(orderId)
+    deactivate Warehouse
+    activate Order
+    Order -> Order: Update status = READY_FOR_DELIVERY
+    Order -> EB: (Optional) Publish\n"READY_FOR_DELIVERY" (orderId)
+    deactivate Order
+
+    Order -> Warehouse: confirmItemsSentToDelivery(orderId)
+    activate Warehouse
+    Warehouse -> Order: sentToDelivery(orderId)
+    deactivate Warehouse
+    activate Order
+    Order -> Order: Update status = SENT_TO_DELIVERY
+    Order -> EB: (Optional) Publish\n"SENT_TO_DELIVERY" (orderId)
+    deactivate Order
+
+else Missed Item Flow (Item Missing)
+    Warehouse -> Order: partialFulfillment(orderId)
+    deactivate Warehouse
+    activate Order
+    Order -> Order: Update status = PARTIALLY_FULFILLED
+    Order -> EB: (Optional) Publish\n"PARTIALLY_FULFILLED" (orderId)
+    deactivate Order
+
+    Order -> Factory: requestItemProduction(orderId, missingSKU)
+    activate Factory
+    Factory -> Factory: Produce missing items
+    Factory -> Order: productionComplete(orderId, newStock)
+    deactivate Factory
+    activate Order
+    Order -> Warehouse: addNewStockToWarehouse(orderId, newStock)
+    deactivate Order
+end
+
+' --- Background process: Factory periodically replenishes stock ---
+loop Periodic Stock Replenishment
+    Factory -> EB: Publish to "stockAddedTopic" (SKU, quantity)
+end
+
+' --- Stage 3: Delivery Processing (Orchestrated by Order) ---
+Order -> Delivery: requestDelivery(orderId, package data)
+activate Delivery
+Delivery -> Delivery: Prepare driver and route
+Delivery -> Order: outForDelivery(orderId)
+deactivate Delivery
+activate Order
+Order -> Order: Update status = OUT_FOR_DELIVERY
+Order -> EB: (Optional) Publish\n"OUT_FOR_DELIVERY" (orderId)
+deactivate Order
+
+Order -> Delivery: confirmDeliveryCompletion(orderId)
+activate Delivery
+Delivery -> Delivery: Complete final handover
+Delivery -> Order: deliverySuccess(orderId)
+deactivate Delivery
+activate Order
+Order -> Order: Update status = DELIVERED
+Order -> EB: (Optional) Publish\n"DELIVERED" (orderId)
+Order -> User: Notify user of final status
+deactivate Order
+
+@enduml

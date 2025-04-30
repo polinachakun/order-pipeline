@@ -37,6 +37,7 @@ public class KafkaConsumerConfig {
         JsonDeserializer<AbstractDto> jsonDeserializer = new JsonDeserializer<>(AbstractDto.class);
         jsonDeserializer.addTrustedPackages("com.example.deliveryservice.dto");
         jsonDeserializer.addTrustedPackages("com.example.warehouseservice.dto");
+        jsonDeserializer.addTrustedPackages("com.example.factoryservice.dto");
         jsonDeserializer.addTrustedPackages("com.example.producer.events");
         jsonDeserializer.addTrustedPackages("com.example.dto");
 
@@ -45,6 +46,9 @@ public class KafkaConsumerConfig {
                 com.example.warehouseservice.dto.OrderStatusUpdateEventDto.class);
         mappings.put("com.example.producer.events.OrderCreatedEvent",
                 com.example.warehouseservice.dto.OrderDto.class);
+        mappings.put(
+                "com.example.dto.ItemDto",
+                com.example.warehouseservice.dto.ItemDto.class);
 
         DefaultJackson2JavaTypeMapper typeMapper = new DefaultJackson2JavaTypeMapper();
         typeMapper.setTypePrecedence(Jackson2JavaTypeMapper.TypePrecedence.TYPE_ID);

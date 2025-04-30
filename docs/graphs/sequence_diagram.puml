@@ -1,0 +1,168 @@
+@startuml
+actor User
+participant "Order Service" as Order
+participant "Event Bus" as EB
+participant "Warehouse Service" as Warehouse
+participant "Factory Service" as Factory
+participant "Delivery Service" as Delivery
+
+' --- Stage 1: New Order Creation ---
+User -> Order: Create new order\n(items, deliveryLocation, totalPrice, etc.)
+activate Order
+Order -> Order: Prepare new order
+Order -> Warehouse: Command: processNewOrder(orderDto)
+activate Warehouse
+Warehouse -> Warehouse: processNewOrder(orderDto)
+Warehouse -> EB: Publish event:\n"READY_FOR_PICKING" (orderId)
+deactivate Warehouse
+deactivate Order
+
+' --- Stage 2: Warehouse Receives New Order ---
+EB -> Order: Deliver "ordersStatusUpdateTopic" event:\n"READY_FOR_PICKING" (orderId, status)
+activate Order
+Order -> Order: Update order status in repository
+deactivate Order
+
+Warehouse -> Warehouse: Attempt fulfillment (check stock)
+
+alt Happy Flow (All Items Available)
+    Warehouse -> Warehouse: Deduct stock, pick items
+    Warehouse -> EB: Publish "ordersStatusUpdateTopic":\n"FULFILLMENT_SUCCESS" (orderId, status)
+
+    EB -> Order: Deliver "ordersStatusUpdateTopic" event:\n"FULFILLMENT_SUCCESS" (orderId, status)
+    activate Order
+    Order -> Order: Update order status in repository
+    Order -> User: Notify user: All items available, fulfillment started
+    deactivate Order
+
+    Warehouse -> EB: Publish "ordersStatusUpdateTopic" event:\n"READY_FOR_PACKING" (orderId, status)
+
+    EB -> Order: Deliver "ordersStatusUpdateTopic" event:\n"READY_FOR_PACKING" (orderId, status)
+    activate Order
+    Order -> Order: Update order status in repository
+    deactivate Order
+
+    Warehouse -> Warehouse: Package items
+    Warehouse -> EB: Publish "ordersStatusUpdateTopic" event:\n"PACKED" (orderId, status)
+
+    EB -> Order: Deliver "ordersStatusUpdateTopic" event:\n"PACKED" (orderId, status)
+    activate Order
+    Order -> Order: Update order status in repository
+    deactivate Order
+
+    Warehouse -> EB: Publish "ordersStatusUpdateTopic" event:\n"READY_FOR_DELIVERY" (orderId, status)
+
+    EB -> Order: Deliver "ordersStatusUpdateTopic" event:\n"READY_FOR_DELIVERY" (orderId, status)
+    activate Order
+    Order -> Order: Update order status in repository
+    Order -> User: Notify user: Order ready for delivery
+    deactivate Order
+
+    Warehouse -> EB: Publish "ordersStatusUpdateTopic" event:\n"SENT_TO_DELIVERY" (orderId, status)
+
+    EB -> Order: Deliver "ordersStatusUpdateTopic" event:\n"SENT_TO_DELIVERY" (orderId, status)
+    activate Order
+    Order -> Order: Update order status in repository
+    deactivate Order
+
+else Missed Item Flow (Item Missing)
+    Warehouse -> Warehouse: Identify missing items
+    Warehouse -> EB: Publish "ordersStatusUpdateTopic" event:\n"PARTIALLY_FULFILLED" (orderId, status)
+
+    EB -> Order: Deliver "ordersStatusUpdateTopic" event:\n"PARTIALLY_FULFILLED" (orderId, status)
+    activate Order
+    Order -> Order: Update order status in repository
+    Order -> User: Notify user: Partial fulfillment, some items missing
+    deactivate Order
+
+    Warehouse -> EB: Publish to "itemRequestTopic" event:\n"ITEM_REQUEST" (itemDto)
+end
+deactivate Warehouse
+
+' --- Background process: The factory periodically sends goods to the warehouse ---
+loop Periodic Stock Replenishment
+    Factory -> EB: Publish to "stockAddedTopic" event\n(itemId, quantity)
+end
+
+' --- Warehouse receives new items and checks pending orders ---
+EB -> Warehouse: Deliver "stockAddedTopic" event
+activate Warehouse
+Warehouse -> Warehouse: Update inventory
+
+loop Check Pending Orders
+    Warehouse -> Warehouse: Find pending orders that can be fulfilled
+    alt Items available for pending orders
+        Warehouse -> Warehouse: Deduct stock, fulfill pending orders
+        Warehouse -> EB: Publish "ordersStatusUpdateTopic" event:\n"FULFILLMENT_SUCCESS" (orderId, status)
+
+        EB -> Order: Deliver "ordersStatusUpdateTopic" event:\n"FULFILLMENT_SUCCESS" (orderId, status)
+        activate Order
+        Order -> Order: Update order status in repository
+        Order -> User: Notify user: All items available, fulfillment started
+        deactivate Order
+
+        Warehouse -> EB: Publish "ordersStatusUpdateTopic" event:\n"READY_FOR_PACKING" (orderId, status)
+        EB -> Order: Deliver "ordersStatusUpdateTopic" event:\n"READY_FOR_PACKING" (orderId)
+
+        Warehouse -> Warehouse: Package items
+        Warehouse -> EB: Publish "ordersStatusUpdateTopic" event:\n"PACKED" (orderId)
+        EB -> Order: Deliver "ordersStatusUpdateTopic" event:\n"PACKED" (orderId)
+
+        Warehouse -> EB: Publish "ordersStatusUpdateTopic" event:\n"READY_FOR_DELIVERY" (orderId, status)
+        EB -> Order: Deliver "ordersStatusUpdateTopic" event:\n"READY_FOR_DELIVERY" (orderId, status)
+        activate Order
+        Order -> Order: Update order status in repository
+        Order -> User: Notify user: Order ready for delivery
+        deactivate Order
+
+        Warehouse -> EB: Publish "ordersStatusUpdateTopic" event:\n"SENT_TO_DELIVERY" (orderDto)
+        EB -> Order: Deliver "ordersStatusUpdateTopic" event:\n"SENT_TO_DELIVERY" (orderDto)
+    else No pending orders can be fulfilled
+        Warehouse -> Warehouse: Wait for the next stock replenishment
+    end
+end
+deactivate Warehouse
+
+' --- Stage 3: Delivery Processing (using Command pattern) ---
+Warehouse -> Delivery: Command: Start delivery\n(orderId, package data, deliveryLocation)
+activate Delivery
+Delivery -> Delivery: Process delivery request
+
+' --- Stage 3: Delivery Processing (using Command pattern) ---
+Warehouse -> Delivery: Command: Start delivery\n(orderId, package data, deliveryLocation)
+activate Delivery
+Delivery -> Delivery: Process delivery request
+
+alt Successful Delivery
+    Delivery -> EB: Publish "orderServiceStatusUpdateTopic" event:\n"DELIVERY_STARTED" (orderId, status)
+    EB -> Order: Deliver "orderServiceStatusUpdateTopic" event:\n"DELIVERY_STARTED" (orderId, status)
+    activate Order
+    Order -> Order: Update order status in repository
+    deactivate Order
+
+    Delivery -> Delivery: Complete delivery
+    Delivery -> EB: Publish "orderServiceStatusUpdateTopic" event:\n"DELIVERED" (orderId, status)
+    EB -> Order: Deliver "orderServiceStatusUpdateTopic" event:\n"DELIVERED" (orderId, status)
+    activate Order
+    Order -> Order: Update order status in repository
+    Order -> User: Notify user: Order successfully delivered
+    deactivate Order
+
+else Delivery Failure (Invalid Address or Other Error)
+    Delivery -> EB: Publish "ordersStatusUpdateTopic" event:\n"DELIVERY_FAILED" (orderId, status)
+
+    EB -> Warehouse: Deliver "ordersStatusUpdateTopic" event:\n"DELIVERY_FAILED"
+    activate Warehouse
+    Warehouse -> Warehouse: Compensate stock (restore items)
+    Warehouse -> EB: Publish "ordersStatusUpdateTopic" event:\n"DELIVERY_FAILED_ORDER_CANCELLED" (orderId, status)
+    deactivate Warehouse
+
+    EB -> Order: Deliver "ordersStatusUpdateTopic" event:\n"DELIVERY_FAILED_ORDER_CANCELLED"
+    activate Order
+    Order -> Order: Update order status in repository
+    Order -> User: Notify user: Delivery failed, order cancelled
+    deactivate Order
+end
+deactivate Delivery
+
+@enduml
