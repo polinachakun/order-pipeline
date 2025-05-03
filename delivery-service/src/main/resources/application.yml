@@ -16,3 +16,15 @@ warehouse:
   service:
     url: http://localhost:8084  # Updated to match the warehouse service port
 
+zeebe:
+  client:
+    cloud:
+      cluster-id: 70966460-4199-4643-a14f-64b0913ba8b7
+      client-id: jV_WrZ.Fk0xV4ijKOfGgTW7g59yTb8.Z
+      client-secret: zPQYDeTnTPHkDKfdu9EP_rAfCKKr1jrFp34mbu1hu1k0vaPoRNC8Kp4C4uAHUYSg
+      region: lhr-1
+#      camunda.client.mode=saas
+#      camunda.client.auth.client-id=jV_WrZ.Fk0xV4ijKOfGgTW7g59yTb8.Z
+#      camunda.client.auth.client-secret=zPQYDeTnTPHkDKfdu9EP_rAfCKKr1jrFp34mbu1hu1k0vaPoRNC8Kp4C4uAHUYSg
+#      camunda.client.cluster-id=70966460-4199-4643-a14f-64b0913ba8b7
+#      camunda.client.region=lhr-1

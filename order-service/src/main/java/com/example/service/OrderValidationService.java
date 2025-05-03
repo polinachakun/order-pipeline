@@ -23,10 +23,10 @@ public class OrderValidationService {
     public void validateOrder(Order order) {
         System.out.println("Validating order: " + order.getOrderId());
         System.out.println("Delivery location: " + order.getDeliveryLocation());
-        System.out.println("Items: " + (order.getItems() != null ? order.getItems().size() : "null"));
+        System.out.println("Items: " + (order.getRequestedItems() != null ? order.getRequestedItems().size() : "null"));
 
         validateDeliveryLocation(order.getDeliveryLocation());
-        validateOrderItems(order.getItems());
+        validateOrderItems(order.getRequestedItems());
 
         System.out.println("Order validation successful");
     }

@@ -20,9 +20,9 @@ public class FactoryEventPublisher {
         publishEvent(kafkaTopicConfig.getStockAddedTopicName(), event);
     }
 
-    public void publishItemRequestTopic(ItemDto event) {
-        publishEvent(kafkaTopicConfig.getItemRequestTopicName(), event);
-    }
+//    public void publishItemRequestTopic(ItemDto event) {
+//        publishEvent(kafkaTopicConfig.getItemRequestTopicName(), event);
+//    }
 
     private void publishEvent(String topicName, ItemDto event) {
         log.info("Sending items to {}: item {}; quantity {}",

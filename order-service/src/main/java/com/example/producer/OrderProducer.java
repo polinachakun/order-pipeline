@@ -45,9 +45,9 @@ public class OrderProducer {
     public void sendOrder(Order order) {
         OrderCreatedEvent event = new OrderCreatedEvent(
                 order.getOrderId(),
-                order.getLocation(),
+                order.getDeliveryLocation(),
                 order.getOrderDate(),
-                order.getItems(),
+                order.getRequestedItems(),
                 "CREATED",
                 Instant.now()
         );
@@ -59,7 +59,6 @@ public class OrderProducer {
         List<OrderItem> items = generateRandomItems();
         Order order = new Order(
                 UUID.randomUUID().toString(),
-                LocalDate.now(),
                 getRandomLocation(),
                 items
         );
