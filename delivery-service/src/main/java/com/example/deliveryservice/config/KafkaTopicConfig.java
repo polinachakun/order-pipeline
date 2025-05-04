@@ -17,6 +17,9 @@ public class KafkaTopicConfig {
     @Value("${kafka.ordersStatusUpdate.warehouse-service-topic}")
     private String ordersStatusUpdateName;
 
+//    @Value("${kafka.ordersStatusUpdate.delivered-order-service-topic}")
+//    private String deliveredOrdersStatusUpdateName;
+
     @Bean
     public NewTopic orderServiceStatusUpdateTopic() {
         return TopicBuilder.name(orderServiceStatusUpdateName)
@@ -32,5 +35,13 @@ public class KafkaTopicConfig {
                 .replicas(1)
                 .build();
     }
+
+//    @Bean
+//    public NewTopic deliveredOrdersStatusUpdate() {
+//        return TopicBuilder.name(deliveredOrdersStatusUpdateName)
+//                .partitions(1)
+//                .replicas(1)
+//                .build();
+//    }
 
 }

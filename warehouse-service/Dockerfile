@@ -8,7 +8,7 @@ WORKDIR /app
 COPY target/warehouse-service.jar warehouse-service.jar
 
 # Expose the port that Spring Boot runs on
-EXPOSE 8082
+EXPOSE 8084
 
 # Run the Spring Boot application
 ENTRYPOINT ["java", "-jar", "warehouse-service.jar"]

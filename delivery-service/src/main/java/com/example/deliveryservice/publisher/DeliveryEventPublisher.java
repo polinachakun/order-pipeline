@@ -24,6 +24,10 @@ public class DeliveryEventPublisher {
         publishEvent(kafkaTopicConfig.getOrdersStatusUpdateName(), event);
     }
 
+    public void publishCompletedDeliveryOrderStatusUpdate(OrderStatusUpdateEventDto event) {
+        publishEvent(kafkaTopicConfig.getOrdersStatusUpdateName(), event);
+    }
+
     private void publishEvent(String topicName, OrderStatusUpdateEventDto event) {
         log.info("Publishing status update to {}, order {} -> status {}",
                 topicName, event.getOrderId(), event.getStatus());

@@ -12,6 +12,8 @@ public interface DeliveryRepository {
 
     Optional<StartDeliveryCommand> findByOrderId(String orderId);
 
+    List<StartDeliveryCommand> findByStatus(String status);
+
     List<StartDeliveryCommand> findAll();
 
 }

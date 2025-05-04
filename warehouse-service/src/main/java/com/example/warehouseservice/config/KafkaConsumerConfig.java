@@ -38,7 +38,8 @@ public class KafkaConsumerConfig {
         jsonDeserializer.addTrustedPackages("com.example.deliveryservice.dto");
         jsonDeserializer.addTrustedPackages("com.example.warehouseservice.dto");
         jsonDeserializer.addTrustedPackages("com.example.factoryservice.dto");
-        jsonDeserializer.addTrustedPackages("com.example.producer.events");
+        jsonDeserializer.addTrustedPackages("com.example.orderservice.dto");
+        jsonDeserializer.addTrustedPackages("com.example.orderservice.producer.events");
         jsonDeserializer.addTrustedPackages("com.example.dto");
 
         Map<String, Class<?>> mappings = new HashMap<>();
@@ -48,6 +49,28 @@ public class KafkaConsumerConfig {
                 com.example.warehouseservice.dto.OrderDto.class);
         mappings.put(
                 "com.example.dto.ItemDto",
+                com.example.warehouseservice.dto.ItemDto.class);
+        mappings.put("com.example.factoryservice.dto.ItemDto",
+                com.example.warehouseservice.dto.ItemDto.class);
+
+        // Order-related mappings
+        mappings.put("com.example.orderservice.producer.events.OrderCreatedEvent",
+                com.example.warehouseservice.dto.OrderDto.class);
+        mappings.put("com.example.orderservice.dto.OrderDto",
+                com.example.warehouseservice.dto.OrderDto.class);
+        mappings.put("com.example.producer.events.OrderCreatedEvent",
+                com.example.warehouseservice.dto.OrderDto.class);
+
+        // Status update mappings
+        mappings.put("com.example.deliveryservice.dto.OrderStatusUpdateEventDto",
+                com.example.warehouseservice.dto.OrderStatusUpdateEventDto.class);
+        mappings.put("com.example.orderservice.dto.OrderStatusUpdateEventDto",
+                com.example.warehouseservice.dto.OrderStatusUpdateEventDto.class);
+
+        // Item mappings
+        mappings.put("com.example.dto.ItemDto",
+                com.example.warehouseservice.dto.ItemDto.class);
+        mappings.put("com.example.orderservice.dto.ItemDto",
                 com.example.warehouseservice.dto.ItemDto.class);
         mappings.put("com.example.factoryservice.dto.ItemDto",
                 com.example.warehouseservice.dto.ItemDto.class);

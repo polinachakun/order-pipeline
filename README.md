@@ -171,7 +171,7 @@ curl -X POST -H "Content-Type: application/json" -d '{
 ```
 #### Step 3.2.2: Partially Restock Inventory (to simulate partial fulfillment)
 ```bash
-curl --location --request GET 'http://localhost:8082/factory/items' \
+curl --location --request GET 'http://localhost:8084/factory/items' \
 --header 'Content-Type: application/json' \
 --data '{
     "itemId": "ITEM-002",
@@ -180,7 +180,7 @@ curl --location --request GET 'http://localhost:8082/factory/items' \
 ```
 #### Step 3.2.3: Fully Restock Inventory (to simulate Happy Path)
 ```bash
-curl --location --request GET 'http://localhost:8082/factory/items' \
+curl --location --request GET 'http://localhost:8084/factory/items' \
 --header 'Content-Type: application/json' \
 --data '{
     "itemId": "ITEM-001",
@@ -189,7 +189,7 @@ curl --location --request GET 'http://localhost:8082/factory/items' \
 ```
 #### Step 3.2.4: Check Inventory Status
 ```bash
-curl --location --request GET 'http://localhost:8082/factory/items' \
+curl --location --request GET 'http://localhost:8084/factory/items' \
 --header 'Content-Type: application/json' \
 --data '{
     "itemId": "ITEM-002",
@@ -198,7 +198,7 @@ curl --location --request GET 'http://localhost:8082/factory/items' \
 ```
 #### Step 3.2.5: Check Order Status
 ```bash
-curl --location --request GET 'http://localhost:8082/orders' \
+curl --location --request GET 'http://localhost:8084/orders' \
 --header 'Content-Type: application/json' \
 --data '{
     "orderId": "6722330",

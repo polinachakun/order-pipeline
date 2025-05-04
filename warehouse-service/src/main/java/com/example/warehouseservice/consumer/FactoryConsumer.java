@@ -2,13 +2,14 @@ package com.example.warehouseservice.consumer;
 
 import com.example.warehouseservice.dto.ItemDto;
 import com.example.warehouseservice.service.WarehouseService;
+import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
+@AllArgsConstructor
 @Slf4j
 public class FactoryConsumer {
 

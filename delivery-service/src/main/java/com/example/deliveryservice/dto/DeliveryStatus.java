@@ -6,7 +6,8 @@ public enum DeliveryStatus {
 
     DELIVERED,
 
-    DELIVERY_FAILED
+    DELIVERY_FAILED,
+    DELIVERY_CANCELLED
 
 
 }
