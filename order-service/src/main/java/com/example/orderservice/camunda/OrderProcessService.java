@@ -24,13 +24,6 @@ public class OrderProcessService {
 
     private final ZeebeClient zeebeClient;
 
-    private final OrderService orderService;
-
-
-    private final ObjectMapper objectMapper;
-
-    private final Set<String> processedEvents = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
     public String startOrderSaga(OrderDto orderDto) {
         Map<String, Object> variables = new HashMap<>();
         variables.put("items", orderDto.getRequestedItems());
@@ -49,19 +42,7 @@ public class OrderProcessService {
         return String.valueOf(processInstance.getProcessInstanceKey());
     }
 
-    //    public void notifyDeliveryCompleted(String orderId) {
-//        zeebeClient.newPublishMessageCommand()
-//                .messageName("DeliveryCompleted")    // must exactly match the BPMN element
-//                .correlationKey(orderId)             // matches the process variable “orderId”
-//                .variables(Map.of(
-//                        "orderId", orderId,
-//                        "deliveryStatus", "DELIVERED"
-//                ))
-//                .send()
-//                .join();
-//
-//        log.info("➡️  Correlated Zeebe message 'DeliveryCompleted' for order={}", orderId);
-//    }
+
     @KafkaListener(
             topics = "${kafka.ordersStatusUpdate.topic}",
             groupId = "${kafka.ordersStatusUpdate.camunda-group-id}",
@@ -123,7 +104,6 @@ public class OrderProcessService {
             log.warn("Failed to publish with UUID message name: {}", e.getMessage());
         }
 
-        // Also try with the fixed message name
         try {
             zeebeClient
                     .newPublishMessageCommand()

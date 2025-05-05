@@ -11,11 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.annotation.JobWorker;
 import io.camunda.zeebe.spring.client.annotation.Variable;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.worker.JobClient;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -34,10 +31,6 @@ public class WarehouseCamundaWorkers {
     private final WarehouseEventPublisher eventPublisher;
     private final ObjectMapper        objectMapper;
     private final ZeebeClient         zeebeClient;
-
-    // ----------------------------------
-    // Camunda External Task Workers
-    // ----------------------------------
 
     @JobWorker(type = "processNewOrder", autoComplete = true)
     public void processNewOrder(
@@ -85,19 +78,30 @@ public class WarehouseCamundaWorkers {
     }
 
     @JobWorker(type = "requestToFactory", autoComplete = true)
-    public void requestFromFactory(
+    public Map<String, Object> requestFromFactory(
             @Variable String orderId,
             @Variable(name = "items") List<Map<String,Object>> rawMissing
     ) {
         log.info("[Camunda] requestToFactory {}", orderId);
+
+        Map<String, Object> variables = new HashMap<>();
+
         List<ItemDto> missing = rawMissing.stream()
                 .map(m -> new ItemDto((String)m.get("itemId"), ((Number)m.get("quantity")).intValue()))
                 .toList();
+        if (!missing.isEmpty()) {
+            ItemDto firstItem = missing.get(0);
+            String itemId = firstItem.getItemId();
+            variables.put("itemId", itemId);
+            log.info("[Camunda] Setting itemId={} for message correlation", itemId);
+        }
 
         missing.forEach(item -> {
             eventPublisher.publishItemRequest(item);
             log.info(" -> Requested factory: {}", item);
         });
+
+        return variables;
     }
 
     @JobWorker(type = "updateInventory", autoComplete = true)
@@ -106,7 +110,13 @@ public class WarehouseCamundaWorkers {
             @Variable Integer quantity
     ) {
         log.info("[Camunda] updateInventory {} x{}", itemId, quantity);
-        warehouseService.addStockAndRecheckPendingOrders(new ItemDto(itemId, quantity));
+        try {
+            warehouseService.addStockAndRecheckPendingOrders(new ItemDto(itemId, quantity));
+            log.info("[Camunda] Successfully updated inventory for item: {}", itemId);
+        } catch (Exception e) {
+            log.error("[Camunda] Failed to update inventory: {}", e.getMessage(), e);
+            throw e;  // Rethrow to let Camunda handle the failure
+        }
     }
 
     @JobWorker(type = "packageItems", autoComplete = true)
@@ -140,41 +150,5 @@ public class WarehouseCamundaWorkers {
         log.info("[Camunda][comp] cancelDelivery {}", orderId);
         // no‐op or notify warehouseService
     }
-
-
-    /**
-     * Listens on the same factory.topic in parallel to your existing consumer,
-     * updates local inventory, and then correlates the StockAdded message
-     * back into Zeebe so your BPMN message‐catch resumes.
-     */
-//    @KafkaListener(
-//            topics           = "${kafka.factory.topic}",
-//            groupId          = "${kafka.factory.group-id}",
-//            containerFactory = "objectsKafkaListenerContainerFactory"
-//    )
-//    public void onFactoryStockAdded(ItemDto item) {
-//        if (item == null || item.getItemId() == null) {
-//            log.warn("[Camunda] skip null/bad ItemDto: {}", item);
-//            return;
-//        }
-//
-//        log.info("[Camunda] factory → stockAdded: {}", item);
-//
-//        // 1) update inventory & pending orders
-//        warehouseService.addStockAndRecheckPendingOrders(item);
-//
-//        // 2) correlate into Zeebe
-//        Map<String,Object> vars = new HashMap<>();
-//        vars.put("itemId",   item.getItemId());
-//        vars.put("quantity", item.getQuantity());
-//
-//        zeebeClient.newPublishMessageCommand()
-//                .messageName("StockAdded")
-//                .correlationKey(item.getItemId())
-//                .variables(vars)
-//                .send()
-//                .join();
-//
-//        log.info("[Camunda] correlated StockAdded for itemId={}", item.getItemId());
-//    }
 }
+
