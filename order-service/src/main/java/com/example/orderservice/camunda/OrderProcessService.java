@@ -11,8 +11,12 @@ import lombok.AllArgsConstructor;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -25,6 +29,8 @@ public class OrderProcessService {
 
 
     private final ObjectMapper objectMapper;
+
+    private final Set<String> processedEvents = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public String startOrderSaga(OrderDto orderDto) {
         Map<String, Object> variables = new HashMap<>();
@@ -58,58 +64,64 @@ public class OrderProcessService {
 //        log.info("➡️  Correlated Zeebe message 'DeliveryCompleted' for order={}", orderId);
 //    }
 
-//    @KafkaListener(
-//            topics           = "${kafka.ordersStatusUpdate.ordersStatusUpdateTopic}",          // e.g. delivery.status
-//            groupId =          "${kafka.ordersStatusUpdate.camunda-group-id}",
-//            containerFactory = "objectsKafkaListenerContainerFactory"
-//    )
-//    public void onDeliveryStatus(OrderStatusUpdateEventDto evt) {
-//
-//        if (evt == null || evt.getOrderId() == null) {
-//            log.warn("Ignoring null/invalid DeliveryStatusEvent: {}", evt);
-//            return;
-//        }
-//
-//        String orderId = evt.getOrderId();
-//        String status = evt.getStatus();
-//
-//        log.info("Received delivery status: orderId={}, status={}", orderId, status);
-//
-//        orderService.updateStatus(orderId, status);
-//        if ("DELIVERED".equals(status)) {
-//            try {
-//                zeebeClient.newPublishMessageCommand()
-//                        .messageName("deliveryCompleted")  // Use a meaningful message name
-//                        .correlationKey(orderId)
-//                        .variables(Map.of(
-//                                "orderId", orderId,
-//                                "deliveryStatus", "DELIVERED"
-//                        ))
-//                        .send()
-//                        .join();
-//
-//                log.info("Successfully published message for order: {}", orderId);
-//            } catch (Exception e) {
-//                log.error("Failed to publish message for order: {}", orderId, e);
-//            }
-//        } else if ("DELIVERY_FAILED".equals(status)) {
-//            try {
-//                zeebeClient.newPublishMessageCommand()
-//                        .messageName("deliveryFailed")  // Use a meaningful message name
-//                        .correlationKey(orderId)
-//                        .variables(Map.of(
-//                                "orderId", orderId,
-//                                "deliveryStatus", "DELIVERY_FAILED"
-//                        ))
-//                        .send()
-//                        .join();
-//
-//
-//                log.info("Published delivery failed message for order: {}", orderId);
-//            } catch (Exception e) {
-//                log.error("Failed to publish delivery failed message for order: {}", orderId, e);
-//            }
-//        }
-//    }
-}
+    @KafkaListener(
+            topics = "${kafka.ordersStatusUpdate.topic}",
+            groupId = "${kafka.ordersStatusUpdate.camunda-group-id}",
+            containerFactory = "objectsKafkaListenerContainerFactory"
+    )
+    public void onDeliveryStatus(OrderStatusUpdateEventDto evt) {
 
+        if (evt == null || evt.getOrderId() == null) {
+            log.warn("Ignoring null/invalid DeliveryStatusEvent: {}", evt);
+            return;
+        }
+
+        String orderId = evt.getOrderId();
+        String status = evt.getStatus();
+
+        String eventKey = orderId + "-" + status + "-" + System.currentTimeMillis()/1000;
+
+        if (!processedEvents.add(eventKey)) {
+            log.debug("Event already processed: {}", eventKey);
+            return;
+        }
+
+        log.info("Processing delivery status: orderId={}, status={}", orderId, status);
+
+        try {
+            // Update order status in the database
+            orderService.updateStatus(orderId, status);
+
+            // Send appropriate message to Camunda based on status
+            if ("DELIVERED".equals(status)) {
+                zeebeClient.newPublishMessageCommand()
+                        .messageName("deliveryCompleted")
+                        .correlationKey(orderId)
+                        .variables(Map.of(
+                                "orderId", orderId,
+                                "deliveryStatus", "DELIVERED"
+                        ))
+                        .send()
+                        .join();
+
+                log.info("Successfully published deliveryCompleted message for order: {}", orderId);
+            } else if ("DELIVERY_FAILED".equals(status)) {
+                zeebeClient.newPublishMessageCommand()
+                        .messageName("deliveryFailed")
+                        .correlationKey(orderId)
+                        .variables(Map.of(
+                                "orderId", orderId,
+                                "deliveryStatus", "DELIVERY_FAILED"
+                        ))
+                        .send()
+                        .join();
+
+                log.info("Published deliveryFailed message for order: {}", orderId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to process delivery status for order: {}", orderId, e);
+            processedEvents.remove(eventKey);
+            throw e;
+        }
+    }
+}
