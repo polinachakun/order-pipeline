@@ -1,24 +1,45 @@
 @startuml
-title Windowed Aggregation with Multiple Streams (Order Tracking SLA)
+!theme plain
+title Order‑Tracking SLA –WindowedJoin
 
-participant "Warehouse Service" as Warehouse
-participant "Delivery Service" as Delivery
-participant "Event Bus (Kafka)" as Kafka
-participant "Kafka Streams (Analytics)" as Analytics
-participant "Monitoring Dashboard" as Dashboard
+skinparam defaultFontName Arial
+skinparam rectangle {
+  BackgroundColor #DDDDDD
+  BorderColor Black
+  FontColor Black
+  Shadowing false
+}
+skinparam database {
+  BackgroundColor #DDDDDD
+  BorderColor Black
+  FontColor Black
+  Shadowing false
+}
 
-Warehouse -> Kafka: ordersStatusUpdateTopic\n(orderId, status=PACKED, timestamp)
-Delivery -> Kafka: deliveryStatusTopic\n(orderId, status=DELIVERED, timestamp)
+'--------------- Streams / Topics -----------------
+rectangle "ordersStatusUpdateTopic\n(PACKED events)" as PackedTopic
+rectangle "deliveryStatusTopic\n(DELIVERED events)"  as DeliveredTopic
+rectangle "order‑tracking‑metrics\n(duration events)" as MetricsTopic
 
-Kafka -> Analytics: ordersStatusUpdateTopic (KStream)
-Kafka -> Analytics: deliveryStatusTopic (KStream)
+'--------------- Processing steps -----------------
+rectangle "Filter PACKED"          as FilterPacked
+rectangle "Filter DELIVERED"       as FilterDelivered
+database  "Window Store\n1‑hour join state" as WindowStore
+rectangle "Windowed Join\n(orderId ±1 h)"   as Join
+rectangle "Calc Duration\n(map)"            as Duration
 
-Analytics -> Analytics: Join both streams by orderId\nwithin 1h window
-Analytics -> Analytics: Calculate time from PACKED to DELIVERED
+'--------------- Sink / Consumer ------------------
+rectangle "Monitoring Dashboard"   as Dashboard
 
-Analytics -> Kafka: Publish to order-tracking-metrics\n(orderId, duration)
+'--------------- Pipeline -------------------------
+PackedTopic    --> FilterPacked
+DeliveredTopic --> FilterDelivered
 
-Kafka -> Dashboard: order-tracking-metrics
-Dashboard -> Dashboard: Show delivery speed SLA
+FilterPacked   --> Join
+FilterDelivered--> Join
+WindowStore    --> Join
+Join           --> Duration
+Duration       --> MetricsTopic
+MetricsTopic   --> Dashboard
 
 @enduml
