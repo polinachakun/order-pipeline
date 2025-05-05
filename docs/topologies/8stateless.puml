@@ -4,7 +4,7 @@
 '------------------------------------------
 skinparam defaultFontName Arial
 
-skinparam class {
+skinparam rectangle {
   BorderColor Black
   FontColor Black
   Shadowing false
@@ -12,26 +12,26 @@ skinparam class {
 '------------------------------------------
 '  Streams
 '------------------------------------------
-class "OrderEvents"  as OrderStream  <<stream>>
-class "StatusEvents" as StatusStream <<stream>>
-class "StockEvents"  as StockStream  <<stream>>
+rectangle "OrderEvents"  as OrderStream  <<stream>>
+rectangle "StatusEvents" as StatusStream <<stream>>
+rectangle "StockEvents"  as StockStream  <<stream>>
 
 '------------------------------------------
 '  Stateless functions
 '------------------------------------------
-class "EventFilter\n(map)"          as EventFilter      <<function>>
-class "EventRouter\n(branch)"       as EventRouter      <<function>>
-class "CommandProcessor\n(flatMap)" as CommandProcessor <<function>>
-class "StreamMerger\n(merge)"       as StreamMerger     <<function>>
-class "EventSplitter\n(branch)"     as EventSplitter    <<function>>
+rectangle "EventFilter\n(map)"          as EventFilter      <<function>>
+rectangle "EventRouter\n(branch)"       as EventRouter      <<function>>
+rectangle "CommandProcessor\n(flatMap)" as CommandProcessor <<function>>
+rectangle "StreamMerger\n(merge)"       as StreamMerger     <<function>>
+rectangle "EventSplitter\n(branch)"     as EventSplitter    <<function>>
 
 '------------------------------------------
 '  Services
 '------------------------------------------
-class "OrderService"     as OrderSvc   <<service>>
-class "WarehouseService" as WareSvc    <<service>>
-class "FactoryService"   as FactorySvc <<service>>
-class "DeliveryService"  as DelivSvc   <<service>>
+rectangle "OrderService"     as OrderSvc   <<service>>
+rectangle "WarehouseService" as WareSvc    <<service>>
+rectangle "FactoryService"   as FactorySvc <<service>>
+rectangle "DeliveryService"  as DelivSvc   <<service>>
 
 '------------------------------------------
 '  Pipeline
