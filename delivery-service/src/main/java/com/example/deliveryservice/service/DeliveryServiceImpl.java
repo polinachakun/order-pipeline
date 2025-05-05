@@ -63,7 +63,7 @@ public class DeliveryServiceImpl implements DeliveryService {
                     throw new RuntimeException("Invalid delivery address");
                 }
 
-                publishDeliveryCompletedStatus(command.getOrderId(), DELIVERED);
+                publishStatusUpdate(command.getOrderId(), DELIVERED);
                 log.info("Delivery completed for order {}, deliveryId={}", command.getOrderId(), command.getDeliveryId());
 
                 command.setStatus(String.valueOf(DELIVERED));

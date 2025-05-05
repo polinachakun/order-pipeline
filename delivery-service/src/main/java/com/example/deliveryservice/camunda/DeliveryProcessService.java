@@ -2,9 +2,9 @@ package com.example.deliveryservice.camunda;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
 import java.util.Map;
 
 @Slf4j
@@ -27,7 +27,7 @@ public class DeliveryProcessService {
             // In real scenario, this would be handled by the scheduled job
             log.info("Manually triggering delivery completion for order: {}, success: {}", orderId, success);
 
-            // You could publish a message event or update the delivery status directly
+
             if (!success) {
                 // Trigger delivery failure event
                 zeebeClient.newPublishMessageCommand()

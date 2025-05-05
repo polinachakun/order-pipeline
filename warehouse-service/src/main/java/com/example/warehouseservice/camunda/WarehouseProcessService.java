@@ -97,7 +97,7 @@ public class WarehouseProcessService {
 
     @KafkaListener(
             topics           = "${kafka.factory.topic}",
-            groupId          = "${kafka.factory.group-id}",
+            groupId          = "${kafka.factory.camunda-group-id}",
             containerFactory = "objectsKafkaListenerContainerFactory"
     )
     public void onStockAdded(ItemDto item) {

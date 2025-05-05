@@ -66,11 +66,35 @@ public class OrderServiceWorker {
         orderService.updateStatus(orderId, order.getStatus());
     }
 
-    @JobWorker(type = "completeOrder", autoComplete = true)
-    public void completeOrder(@Variable String orderId) {
-        log.info("[Camunda] completeOrder {}", orderId);
-        orderService.updateStatus(orderId, OrderStatus.COMPLETED.name());
+    @JobWorker(type = "completeOrder", autoComplete = false, timeout = 10000)
+    public void completeOrder(final JobClient client, final ActivatedJob job) {
+        String orderId = (String) job.getVariablesAsMap().get("orderId");
+        log.info("[Camunda] completeOrder job triggered for order: {}", orderId);
+
+        try {
+            // Update order status
+            orderService.updateStatus(orderId, OrderStatus.COMPLETED.name());
+
+            // Complete the job - THIS IS IMPORTANT
+            client.newCompleteCommand(job.getKey())
+                    .send()
+                    .exceptionally(throwable -> {
+                        log.error("Failed to complete completeOrder job: {}", throwable.getMessage(), throwable);
+                        return null;
+                    });
+
+            log.info("[Camunda] Successfully completed order: {}", orderId);
+        } catch (Exception e) {
+            log.error("[Camunda] Error completing order {}: {}", orderId, e.getMessage(), e);
+
+            // Fail the job so it can be retried
+            client.newFailCommand(job.getKey())
+                    .retries(job.getRetries() - 1)
+                    .errorMessage(e.getMessage())
+                    .send();
+        }
     }
+
 
 
 }
