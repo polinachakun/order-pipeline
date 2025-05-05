@@ -62,5 +62,5 @@ legend left
 |= Shape |= Meaning |
 | rectangle | Microservice / Kafka topic |
 | database  | Local state store (KTable) |
-endlegend
+end legend
 @enduml
