@@ -1,0 +1,50 @@
+@startuml
+title Order Status Store –KTable+InteractiveQueries (Stateful)
+
+skinparam defaultFontName Arial
+skinparam componentStyle rectangle
+skinparam {
+  BorderColor Black
+  FontColor Black
+  Shadowing false
+}
+
+actor User
+component "Warehouse / Delivery / Factory" as Producers
+component "ordersStatusUpdateTopic\n(Kafka)" as Topic
+component "Order Service\n(Kafka Streams)" as OrderSvc
+database  "Local State Store\n(order‑status RocksDB)" as Store
+component "Order REST API" as Api
+
+'------------------------------------------
+'  Data‑flow
+'------------------------------------------
+Producers --> Topic    : publish\n(orderId, status)
+Topic      --> OrderSvc: KTable changelog stream
+OrderSvc   --> Store   : materialize\nKTable<String,OrderStatus>
+
+User --> Api : GET /order-status/{id}\nGET /orders?status=...
+Api  --> OrderSvc : interactive query\n(key lookup / range scan)
+OrderSvc --> Api  : OrderStatus / list<OrderId>
+Api  --> User     : JSON response
+
+'------------------------------------------
+'  Annotation
+'------------------------------------------
+note right of OrderSvc
+  **Stateful** component:
+  keeps the latest status per
+  orderId inside the local
+  RocksDB store (KTable).
+  Interactive Queries expose
+  that store for constant‑time
+  lookups without hitting Kafka.
+end note
+
+legend left
+|= Shape |= Role |
+| rectangle | Service / Component |
+| database  | Local key‑value state |
+| actor     | End user |
+endlegend
+@enduml

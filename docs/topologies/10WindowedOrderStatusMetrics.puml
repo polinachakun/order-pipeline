@@ -1,0 +1,24 @@
+@startuml
+title Windowed Aggregation with Multiple Streams (Order Tracking SLA)
+
+participant "Warehouse Service" as Warehouse
+participant "Delivery Service" as Delivery
+participant "Event Bus (Kafka)" as Kafka
+participant "Kafka Streams (Analytics)" as Analytics
+participant "Monitoring Dashboard" as Dashboard
+
+Warehouse -> Kafka: ordersStatusUpdateTopic\n(orderId, status=PACKED, timestamp)
+Delivery -> Kafka: deliveryStatusTopic\n(orderId, status=DELIVERED, timestamp)
+
+Kafka -> Analytics: ordersStatusUpdateTopic (KStream)
+Kafka -> Analytics: deliveryStatusTopic (KStream)
+
+Analytics -> Analytics: Join both streams by orderId\nwithin 1h window
+Analytics -> Analytics: Calculate time from PACKED to DELIVERED
+
+Analytics -> Kafka: Publish to order-tracking-metrics\n(orderId, duration)
+
+Kafka -> Dashboard: order-tracking-metrics
+Dashboard -> Dashboard: Show delivery speed SLA
+
+@enduml

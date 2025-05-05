@@ -1,0 +1,27 @@
+@startuml
+!theme plain
+title Topology 2 – InventoryProjection & LowStockAlert
+
+skinparam defaultFontName Arial
+
+cloud "stockAddedTopic"    as StockAdded
+cloud "ordersStatusUpdateTopic" as Statuses
+cloud "lowStockAlertTopic" as AlertTopic
+database "KTable: current_stock\n[itemId → qty]" as StockTable
+
+component "KStream\nstock events" as StockStream
+component "agg:sum(+/-qty)"       as Agg
+component "KStream\norder events" as OrderStream
+component "leftJoin\nwith StockTable" as Join
+component "filter\n(qty<threshold)" as LowCheck
+
+StockAdded --> StockStream
+StockStream --> Agg
+Agg --> StockTable
+
+Statuses --> OrderStream
+OrderStream --> Join
+StockTable --> Join
+Join --> LowCheck
+LowCheck --> AlertTopic : LOW_STOCK_ALERT
+@enduml

@@ -1,0 +1,58 @@
+@startuml
+'------------------------------------------
+!theme plain
+title Inventory Availability Check –KStream×KTable Join
+
+skinparam defaultFontName Arial
+skinparam rectangle {
+  BorderColor Black
+  FontColor Black
+  Shadowing false
+}
+
+rectangle "Warehouse Service" as Warehouse
+rectangle "Factory Service" as Factory
+rectangle "Order Service" as Order
+rectangle "itemRequestTopic" as ItemReqTopic
+rectangle "stockAddedTopic" as StockTopic
+rectangle "ordersStatusUpdateTopic" as StatusTopic
+database "KTable inventory‑store\n[itemId ➜ qtyOnHand]" as InvStore
+rectangle "Stream–Table Join\n(decide fulfillment)" as Join
+
+'------------------------------------------
+' Flow
+'------------------------------------------
+Warehouse --> ItemReqTopic : 1. Publish ITEM_REQUEST\n(itemId, qtyNeeded)
+ItemReqTopic --> Factory : 2. Consume item requests
+Factory --> StockTopic : 3. Publish stock updates\n(itemId, qtyAdded)
+StockTopic --> InvStore : 4. Update inventory\n(+qty)
+InvStore --> Warehouse : 5. Maintain local state
+Warehouse --> Join : 6. Process pending orders
+InvStore --> Join : 7. Check inventory\navailability
+Join --> StatusTopic : 8. Publish status update\n(FULFILLMENT_SUCCESS/PARTIALLY_FULFILLED)
+StatusTopic --> Order : 9. Consume status updates
+Order --> Order : 10. Update order status
+
+'------------------------------------------
+' Annotations
+'------------------------------------------
+note right of InvStore
+  Materialized **KTable** (RocksDB)
+  keeps the latest quantity per item.
+  Updates from stockAddedTopic
+  maintain current inventory.
+end note
+
+note right of Join
+  **Stream–Table Join** (stateful):
+  Warehouse Service joins pending orders
+  with current inventory levels to
+  determine fulfillment status.
+end note
+
+legend left
+|= Shape |= Meaning |
+| rectangle  | Microservice / Topic |
+| database   | Local state store (KTable) |
+endlegend
+@enduml

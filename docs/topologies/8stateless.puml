@@ -1,0 +1,83 @@
+@startuml
+'------------------------------------------
+'  General style (monochrome)
+'------------------------------------------
+skinparam defaultFontName Arial
+
+skinparam class {
+  BorderColor Black
+  FontColor Black
+  Shadowing false
+}
+'------------------------------------------
+'  Streams
+'------------------------------------------
+class "OrderEvents"  as OrderStream  <<stream>>
+class "StatusEvents" as StatusStream <<stream>>
+class "StockEvents"  as StockStream  <<stream>>
+
+'------------------------------------------
+'  Stateless functions
+'------------------------------------------
+class "EventFilter\n(map)"          as EventFilter      <<function>>
+class "EventRouter\n(branch)"       as EventRouter      <<function>>
+class "CommandProcessor\n(flatMap)" as CommandProcessor <<function>>
+class "StreamMerger\n(merge)"       as StreamMerger     <<function>>
+class "EventSplitter\n(branch)"     as EventSplitter    <<function>>
+
+'------------------------------------------
+'  Services
+'------------------------------------------
+class "OrderService"     as OrderSvc   <<service>>
+class "WarehouseService" as WareSvc    <<service>>
+class "FactoryService"   as FactorySvc <<service>>
+class "DeliveryService"  as DelivSvc   <<service>>
+
+'------------------------------------------
+'  Pipeline
+'------------------------------------------
+OrderStream   --> EventFilter                 : incoming events
+EventFilter   --> EventRouter                 : filtered events
+EventRouter   --> OrderSvc                    : READY_FOR_PICKING
+EventRouter   --> WareSvc                     : ITEM_REQUEST
+EventRouter   --> DelivSvc                    : DELIVERY_STARTED
+
+OrderSvc      --> CommandProcessor            : processNewOrder(cmd)
+CommandProcessor --> WareSvc                  : pick/pack commands
+
+WareSvc       --> StatusStream                : FULFILLMENT_*, READY_*, PACKED
+FactorySvc    --> StockStream                 : STOCK_ADDED
+
+StockStream   --> WareSvc                     : replenish
+WareSvc       --> StatusStream                : READY_FOR_DELIVERY, SENT_TO_DELIVERY
+
+DelivSvc      --> StatusStream                : DELIVERY_STARTED / DELIVERED / DELIVERY_FAILED
+
+StatusStream  --> StreamMerger
+StreamMerger  --> EventSplitter
+EventSplitter --> OrderSvc                    : status updates
+EventSplitter --> WareSvc                     : compensation / retry info
+EventSplitter --> DelivSvc                    : follow‑up actions
+
+'------------------------------------------
+'  Annotations
+'------------------------------------------
+note right of EventRouter
+  Stateless **branch** — routes
+  each event type into an
+  independent processing path.
+end note
+
+note right of StreamMerger
+  **merge** gathers all order‑status
+  events into one stream without
+  keeping local state.
+end note
+
+legend left
+|= Element |= Role |
+| stream    | Kafka topic / Event stream |
+| function  | Stateless function (map / flatMap / merge / branch) |
+| service   | Microservice |
+endlegend
+@enduml
