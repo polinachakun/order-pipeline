@@ -22,9 +22,7 @@ public class KafkaTopicConfig {
     
     @Value("${kafka.itemRequest.topic}")
     private String itemRequestTopicName;
-//
-//    @Value("${kafka.ordersStatusUpdate.delivered-order-service-topic}")
-//    private String deliveredOrdersStatusUpdateName;
+
 
     @Bean
     public NewTopic ordersTopic() {
@@ -58,11 +56,4 @@ public class KafkaTopicConfig {
                 .build();
     }
 
-//    @Bean
-//    public NewTopic deliveredOrdersStatusUpdate() {
-//        return TopicBuilder.name(deliveredOrdersStatusUpdateName)
-//                .partitions(1)
-//                .replicas(1)
-//                .build();
-//    }
 }

@@ -25,12 +25,12 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class WarehouseCamundaWorkers {
 
-    private final WarehouseService    warehouseService;
-    private final InventoryService    inventoryService;
-    private final OrderService        orderService;
+    private final WarehouseService warehouseService;
+    private final InventoryService inventoryService;
+    private final OrderService orderService;
     private final WarehouseEventPublisher eventPublisher;
-    private final ObjectMapper        objectMapper;
-    private final ZeebeClient         zeebeClient;
+    private final ObjectMapper objectMapper;
+    private final ZeebeClient zeebeClient;
 
     @JobWorker(type = "processNewOrder", autoComplete = true)
     public void processNewOrder(
@@ -40,7 +40,7 @@ public class WarehouseCamundaWorkers {
     ) {
         log.info("[Camunda] processNewOrder {}", orderId);
         List<ItemDto> items = rawItems.stream()
-                .map(m -> new ItemDto((String)m.get("itemId"), ((Number)m.get("quantity")).intValue()))
+                .map(m -> new ItemDto((String) m.get("itemId"), ((Number) m.get("quantity")).intValue()))
                 .collect(Collectors.toList());
         OrderDto dto = OrderDto.builder()
                 .orderId(orderId)
@@ -51,19 +51,19 @@ public class WarehouseCamundaWorkers {
     }
 
     @JobWorker(type = "checkStock", autoComplete = true)
-    public Map<String,Object> checkStock(
+    public Map<String, Object> checkStock(
             @Variable String orderId,
-            @Variable(name = "items") List<Map<String,Object>> rawItems
+            @Variable(name = "items") List<Map<String, Object>> rawItems
     ) throws Exception {
         log.info("[Camunda] checkStock {}", orderId);
         List<ItemDto> items = rawItems.stream()
-                .map(m -> new ItemDto((String)m.get("itemId"), ((Number)m.get("quantity")).intValue()))
+                .map(m -> new ItemDto((String) m.get("itemId"), ((Number) m.get("quantity")).intValue()))
                 .collect(Collectors.toList());
 
         List<ItemDto> missing = inventoryService.pickItemsForOrder(items);
         boolean available = missing == null || missing.isEmpty();
 
-        Map<String,Object> vars = new HashMap<>();
+        Map<String, Object> vars = new HashMap<>();
         vars.put("stockAvailable", available);
         if (!available) {
             vars.put("missingItems", objectMapper.writeValueAsString(missing));
@@ -80,14 +80,14 @@ public class WarehouseCamundaWorkers {
     @JobWorker(type = "requestToFactory", autoComplete = true)
     public Map<String, Object> requestFromFactory(
             @Variable String orderId,
-            @Variable(name = "items") List<Map<String,Object>> rawMissing
+            @Variable(name = "items") List<Map<String, Object>> rawMissing
     ) {
         log.info("[Camunda] requestToFactory {}", orderId);
 
         Map<String, Object> variables = new HashMap<>();
 
         List<ItemDto> missing = rawMissing.stream()
-                .map(m -> new ItemDto((String)m.get("itemId"), ((Number)m.get("quantity")).intValue()))
+                .map(m -> new ItemDto((String) m.get("itemId"), ((Number) m.get("quantity")).intValue()))
                 .toList();
         if (!missing.isEmpty()) {
             ItemDto firstItem = missing.get(0);

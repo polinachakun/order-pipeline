@@ -8,7 +8,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
-import org.springframework.kafka.core.*;
+import org.springframework.kafka.core.ConsumerFactory;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.mapping.DefaultJackson2JavaTypeMapper;
 import org.springframework.kafka.support.mapping.Jackson2JavaTypeMapper;
@@ -30,9 +31,6 @@ public class KafkaConsumerConfig {
 
     @Value("${kafka.ordersStatusUpdate.camunda-group-id}")
     private String camundaGroupId;
-
-
-    // === factory для AbstractDto ===
 
     @Bean
     public ConsumerFactory<String, AbstractDto> objectsConsumerFactory() {
@@ -82,8 +80,6 @@ public class KafkaConsumerConfig {
     }
 
 
-    // === factory для Camunda‑listener (String payload) ===
-
     @Bean
     public ConsumerFactory<String, String> camundaConsumerFactory() {
         Map<String, Object> props = new HashMap<>();
@@ -106,4 +102,5 @@ public class KafkaConsumerConfig {
         factory.setConsumerFactory(camundaConsumerFactory());
         factory.setCommonErrorHandler(new DefaultErrorHandler(new FixedBackOff(1000L, 2)));
         return factory;
-    }}
+    }
+}

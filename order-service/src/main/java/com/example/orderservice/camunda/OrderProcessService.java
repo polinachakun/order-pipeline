@@ -2,8 +2,6 @@ package com.example.orderservice.camunda;
 
 import com.example.orderservice.dto.OrderDto;
 import com.example.orderservice.dto.OrderStatusUpdateEventDto;
-import com.example.orderservice.service.OrderService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import lombok.AllArgsConstructor;
@@ -11,11 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service

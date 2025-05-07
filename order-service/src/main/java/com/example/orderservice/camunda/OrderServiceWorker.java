@@ -11,15 +11,11 @@ import io.camunda.zeebe.spring.client.annotation.Variable;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.client.ZeebeClient;
-import org.springframework.kafka.annotation.KafkaListener;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
@@ -94,7 +90,6 @@ public class OrderServiceWorker {
                     .send();
         }
     }
-
 
 
 }
