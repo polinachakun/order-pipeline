@@ -162,7 +162,7 @@
     </repositories>
 
     <build>
-        <finalName>warehouse-service</finalName>
+        <finalName>factory-service</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

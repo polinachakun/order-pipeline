@@ -14,3 +14,4 @@ kafka:
 
 factory:
   replenish-interval-ms: 5000000
+
