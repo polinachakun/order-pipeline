@@ -65,3 +65,8 @@ delivery:
 #logging:
 #  level:
 #    com.example.warehouseservice: INFO
+
+logging:
+  level:
+    io.camunda.zeebe.client.job.worker: ERROR
+    io.grpc.stub.ClientCalls: ERROR
