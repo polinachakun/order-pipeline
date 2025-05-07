@@ -1,3 +1,4 @@
+# application.yml
 server:
   port: 8092
 
@@ -8,18 +9,46 @@ spring:
     compose:
       enabled: false
 
-# custom configuration via Configuration files
-kafka:
+# Camunda Cloud Configuration
+camunda:
+  client:
+    optimize:
+      base-url: https://lhr-1.optimize.camunda.io/70966460-4199-4643-a14f-64b0913ba8b7
 
+    mode: saas
+
+    cluster-id: 70966460-4199-4643-a14f-64b0913ba8b7
+    region: lhr-1
+
+    auth:
+      client-id: jV_WrZ.Fk0xV4ijKOfGgTW7g59yTb8.Z
+      client-secret: zPQYDeTnTPHkDKfdu9EP_rAfCKKr1jrFp34mbu1hu1k0vaPoRNC8Kp4C4uAHUYSg
+
+    zeebe:
+      base-url: https://70966460-4199-4643-a14f-64b0913ba8b7.lhr-1.zeebe.camunda.io:443
+
+      # Operate API configuration
+    operate:
+      enabled: true
+      base-url: https://lhr-1.operate.camunda.io/70966460-4199-4643-a14f-64b0913ba8b7
+
+    # Tasklist API configuration
+    tasklist:
+      enabled: true
+      base-url: https://lhr-1.tasklist.camunda.io/70966460-4199-4643-a14f-64b0913ba8b7
+
+# Kafka configuration
+kafka:
   general:
     bootstrap-servers: localhost:9092
-
   orders:
     topic: newOrdersTopic
     group-id: order-group
   ordersStatusUpdate:
     topic: ordersStatusUpdateTopic
+#    delivered-order-service-topic: deliveredOrderStatusUpdateTopic
     group-id: order-group
+    camunda-group-id:  camunda-group
   orderServiceStatusUpdate:
     topic: ordersStatusUpdateTopic
     group-id: order-group
@@ -30,35 +59,13 @@ kafka:
     topic: itemRequestTopic
     group-id: order-group
 
+
 warehouse:
   service:
-    url: http://localhost:8082
-
-camunda:
-  bpm:
-    admin-user:
-      id: admin
-      password: admin
-      firstName: Admin
-    database:
-      type: h2
-    filter:
-      create: All tasks
+    url: http://localhost:8084
 
 management:
   endpoints:
     web:
       exposure:
         include: "*"
-
-
-#  datasource:
-#    url: jdbc:h2:mem:camunda;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
-#    driverClassName: org.h2.Driver
-#    username: sa
-#    password:
-#
-#    jpa:
-#      database-platform: org.hibernate.dialect.H2Dialect
-#      hibernate:
-#        ddl-auto: update

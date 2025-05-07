@@ -25,7 +25,18 @@
         <lombok.mapstruct.binding.version>0.2.0</lombok.mapstruct.binding.version>
         <maven.compiler.plugin.version>3.10.1</maven.compiler.plugin.version>
         <spring.boot.configuration.processor.version>3.4.3</spring.boot.configuration.processor.version>
+        <spring-zeebe.version>8.5.0</spring-zeebe.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.camunda</groupId>
+                <artifactId>spring-boot-starter-camunda-sdk</artifactId>
+                <version>${spring-zeebe.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
 
@@ -70,7 +81,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
-            <version>3.2.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -112,10 +122,51 @@
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- Replace Camunda 7 dependencies with Camunda 8 -->
+        <dependency>
+            <groupId>io.camunda.spring</groupId>
+            <artifactId>spring-boot-starter-camunda</artifactId>
+            <version>${spring-zeebe.version}</version>
+        </dependency>
+
+        <!-- Zeebe client for Camunda 8 -->
+        <dependency>
+            <groupId>io.camunda</groupId>
+            <artifactId>zeebe-client-java</artifactId>
+            <version>8.5.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 
+    <repositories>
+        <repository>
+            <id>camunda-nexus</id>
+            <name>Camunda Repository</name>
+            <url>https://artifacts.camunda.com/artifactory/camunda-bpm/</url>
+        </repository>
+    </repositories>
+
     <build>
-        <finalName>warehouse-service</finalName>
+        <finalName>order-service</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -1,0 +1,182 @@
+@startuml
+actor User
+participant "Order Service" as Order
+participant "Camunda Engine" as Camunda
+participant "Event Bus (Kafka)" as EB
+participant "Warehouse Service" as Warehouse
+participant "Factory Service" as Factory
+participant "Delivery Service" as Delivery
+
+' === Phase 1: Order Creation ===
+User -> Order: Create new order\n(items, deliveryLocation, totalPrice, etc.)
+activate Order
+Order -> Camunda: Start Process Instance\n("OrderSaga", variables)
+activate Camunda
+
+Camunda -> Order: Execute "Create Order" Task
+activate Order
+Order -> Order: Create order in database
+Order -> EB: Publish event: ORDER_CREATED
+Order -> Camunda: Complete task with orderId
+deactivate Order
+
+' === Phase 2: Process New Order ===
+Camunda -> Warehouse: Execute "Process New Order" Task
+activate Warehouse
+Warehouse -> Warehouse: Process new order\n(prepare for stock check)
+Warehouse -> EB: Publish event: READY_FOR_PICKING
+Warehouse -> Camunda: Complete task
+deactivate Warehouse
+
+' === Phase 3: Check Stock ===
+Camunda -> Warehouse: Execute "Check Stock" Task
+activate Warehouse
+Warehouse -> Warehouse: Check stock availability
+Warehouse -> Camunda: Complete task with\nstockAvailable=true/false
+deactivate Warehouse
+
+' === Phase 4: Decision Gateway ===
+Camunda -> Camunda: Evaluate stockAvailable
+
+alt Stock Available (Happy Path)
+    Camunda -> Warehouse: Execute "Fulfill Order" Task
+    activate Warehouse
+    Warehouse -> Warehouse: Deduct stock from inventory
+    Warehouse -> EB: Publish event: FULFILLMENT_SUCCESS
+    Warehouse -> Camunda: Complete task
+    deactivate Warehouse
+
+    Camunda -> Warehouse: Execute "Package Items" Task
+    activate Warehouse
+    Warehouse -> Warehouse: Pick and package items
+    Warehouse -> EB: Publish event: PACKED
+    Warehouse -> Camunda: Complete task
+    deactivate Warehouse
+
+else Stock Missing (Request to Factory)
+    Camunda -> Factory: Execute "Request to Factory" Task
+    activate Factory
+    Factory -> EB: Publish event: ITEM_REQUEST
+    Factory -> Camunda: Complete task
+    deactivate Factory
+
+    note right of Camunda: Wait for Stock Added message event
+
+    Factory -> EB: Publish event: STOCK_ADDED
+    EB -> Camunda: Correlate message "StockAdded"
+
+    Camunda -> Warehouse: Execute "Fulfill Pending Order" Task
+    activate Warehouse
+    Warehouse -> Warehouse: Deduct newly arrived stock
+    Warehouse -> EB: Publish event: FULFILLMENT_SUCCESS
+    Warehouse -> Camunda: Complete task
+    deactivate Warehouse
+
+    Camunda -> Warehouse: Execute "Package Items" Task
+    activate Warehouse
+    Warehouse -> Warehouse: Pick and package items
+    Warehouse -> EB: Publish event: PACKED
+    Warehouse -> Camunda: Complete task
+    deactivate Warehouse
+end
+
+' === Phase 5: Delivery ===
+Camunda -> Delivery: Execute "Start Delivery" Task
+activate Delivery
+Delivery -> Delivery: Initiate delivery process
+Delivery -> EB: Publish event: DELIVERY_STARTED
+Delivery -> Camunda: Complete task
+deactivate Delivery
+
+Camunda -> Delivery: Execute "Complete Delivery" Task
+activate Delivery
+
+alt Successful Delivery
+    Delivery -> Delivery: Complete delivery
+    Delivery -> EB: Publish event: DELIVERED
+    Delivery -> Camunda: Complete task
+    deactivate Delivery
+
+    Camunda -> Camunda: End Event: Order Delivered
+    Camunda -> Order: Process completed successfully
+    activate Order
+    Order -> User: Notify: Order delivered successfully
+    deactivate Order
+
+else Delivery Failed
+    Delivery -> Camunda: Handle BPMN Error\n"DELIVERY_FAILED"
+    deactivate Delivery
+
+    Camunda -> Camunda: Catch Error Event
+    Camunda -> Camunda: Trigger Compensation
+
+    note right of Camunda: Compensation executes\nin reverse order
+
+    ' === Compensation Flow ===
+    Camunda -> Delivery: Execute "Cancel Delivery"\n(compensation)
+    activate Delivery
+    Delivery -> Delivery: Cancel delivery process
+    Delivery -> EB: Publish event: DELIVERY_CANCELLED
+    Delivery -> Camunda: Complete compensation
+    deactivate Delivery
+
+    Camunda -> Warehouse: Execute "Unpack Items"\n(compensation)
+    activate Warehouse
+    Warehouse -> Warehouse: Unpack items\nReturn to stock location
+    Warehouse -> EB: Publish event: ITEMS_UNPACKED
+    Warehouse -> Camunda: Complete compensation
+    deactivate Warehouse
+
+    Camunda -> Warehouse: Execute "Restore Stock"\n(compensation)
+    activate Warehouse
+    Warehouse -> Warehouse: Restore deducted stock\nto inventory
+    Warehouse -> EB: Publish event: STOCK_RESTORED
+    Warehouse -> Camunda: Complete compensation
+    deactivate Warehouse
+
+    Camunda -> Warehouse: Execute "Release Stock Reservation"\n(compensation)
+    activate Warehouse
+    Warehouse -> Warehouse: Release reserved stock
+    Warehouse -> EB: Publish event: RESERVATION_RELEASED
+    Warehouse -> Camunda: Complete compensation
+    deactivate Warehouse
+
+    Camunda -> Order: Execute "Cancel Order"\n(compensation)
+    activate Order
+    Order -> Order: Update order status\nto CANCELLED
+    Order -> EB: Publish event: ORDER_CANCELLED
+    Order -> Camunda: Complete compensation
+    deactivate Order
+
+    Camunda -> Camunda: End Event: Order Cancelled
+    Camunda -> Order: Process completed with failure
+    activate Order
+    Order -> User: Notify: Order cancelled due to delivery failure
+    deactivate Order
+end
+
+deactivate Camunda
+
+' === Notes ===
+note right of Camunda
+    Key Patterns Implemented:
+    - External Service Tasks
+    - Message Events (Kafka)
+    - Error Boundary Events
+    - Compensation Activities
+    - Exclusive Gateway
+    - Process Variables
+end note
+
+note left of EB
+    All Events published to Kafka:
+    - ORDER_CREATED
+    - READY_FOR_PICKING
+    - FULFILLMENT_SUCCESS
+    - STOCK_RESTORED
+    - PACKED
+    - DELIVERY_STARTED
+    - DELIVERED/DELIVERY_CANCELLED
+    - ORDER_CANCELLED
+end note
+@endum

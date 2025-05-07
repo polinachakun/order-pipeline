@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Created-By: Maven JAR Plugin 3.4.1
 Build-Jdk-Spec: 23
 Main-Class: org.springframework.boot.loader.launch.JarLauncher
-Start-Class: com.example.OrderServiceApplication
+Start-Class: com.example.orderservice.OrderServiceApplication
 Spring-Boot-Version: 3.2.1
 Spring-Boot-Classes: BOOT-INF/classes/
 Spring-Boot-Lib: BOOT-INF/lib/

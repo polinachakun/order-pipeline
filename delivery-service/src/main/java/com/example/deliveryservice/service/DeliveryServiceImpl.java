@@ -7,7 +7,6 @@ import com.example.deliveryservice.publisher.DeliveryEventPublisher;
 import com.example.deliveryservice.repository.DeliveryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -38,11 +37,12 @@ public class DeliveryServiceImpl implements DeliveryService {
         deliveryRepository.save(command);
 
         publishStatusUpdate(command.getOrderId(), DELIVERY_STARTED);
+        deliveryStatusUpdate();
 
         return deliveryId;
     }
 
-    @Scheduled(fixedRate = 10000)  // to simulate delivery progress
+//    @Scheduled(fixedRate = 5000)
     public void deliveryStatusUpdate() {
         List<StartDeliveryCommand> deliveries = findAll();
 
@@ -71,7 +71,7 @@ public class DeliveryServiceImpl implements DeliveryService {
 
             } catch (Exception ex) {
                 log.error("Delivery failed for order {}, reason: {}", command.getOrderId(), ex.getMessage());
-                publishDeliveryFailedStatusUpdate(command.getOrderId());
+                publishDeliveryFailedStatus(command.getOrderId());
 
                 command.setStatus(DELIVERY_FAILED.name());
                 deliveryRepository.save(command);
@@ -85,7 +85,19 @@ public class DeliveryServiceImpl implements DeliveryService {
         return deliveryRepository.findAll();
     }
 
-    private void publishStatusUpdate(String orderId, DeliveryStatus status) {
+    @Override
+    public void publishDeliveryCompletedStatus(String orderId, DeliveryStatus status) {
+        if (orderId == null) {
+            log.error("Cannot publish delivery failed status update with null orderId");
+            return;
+        }
+        OrderStatusUpdateEventDto event = new OrderStatusUpdateEventDto(orderId, DeliveryStatus.DELIVERED.name());
+        eventPublisher.publishCompletedDeliveryOrderStatusUpdate(event);
+
+    }
+
+    @Override
+    public void publishStatusUpdate(String orderId, DeliveryStatus status) {
         if (orderId == null || status == null) {
             log.error("Cannot publish status update with null orderId or status");
             return;
@@ -94,12 +106,23 @@ public class DeliveryServiceImpl implements DeliveryService {
         eventPublisher.publishOrderStatusUpdate(event);
     }
 
-    private void publishDeliveryFailedStatusUpdate(String orderId) {
+    @Override
+    public void publishDeliveryFailedStatus(String orderId) {
         if (orderId == null) {
             log.error("Cannot publish delivery failed status update with null orderId");
             return;
         }
         OrderStatusUpdateEventDto event = new OrderStatusUpdateEventDto(orderId, DeliveryStatus.DELIVERY_FAILED.name());
+        eventPublisher.publishDeliveryFailedOrderStatusUpdate(event);
+    }
+
+    @Override
+    public void publishDeliveryCancelledStatus(String orderId) {
+        if (orderId == null) {
+            log.error("Cannot publish delivery failed status update with null orderId");
+            return;
+        }
+        OrderStatusUpdateEventDto event = new OrderStatusUpdateEventDto(orderId, DELIVERY_CANCELLED.name());
         eventPublisher.publishDeliveryFailedOrderStatusUpdate(event);
     }
 
