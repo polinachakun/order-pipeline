@@ -36,7 +36,7 @@ public class DeliveryServiceWorker {
     ) {
         log.info("[Camunda Worker] startDelivery: order={}, location={}", orderId, deliveryLocation);
         try {
-            // Delegate to service, which generates ID, status and publishes STARTED
+
             String deliveryId = UUID.randomUUID().toString();
             String status = DeliveryStatus.DELIVERY_STARTED.name();
             StartDeliveryCommand command = new StartDeliveryCommand(
@@ -91,9 +91,6 @@ public class DeliveryServiceWorker {
         }
     }
 
-    /**
-     * Compensation worker: cancel delivery
-     */
     @JobWorker(type = "cancelDelivery", autoComplete = true)
     public void cancelDelivery(@Variable String orderId) {
         log.info("[Camunda Worker] cancelDelivery: order={}", orderId);

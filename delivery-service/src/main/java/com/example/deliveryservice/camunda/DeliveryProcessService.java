@@ -14,9 +14,6 @@ public class DeliveryProcessService {
 
     private final ZeebeClient zeebeClient;
 
-    /**
-     * Manually trigger delivery completion (for testing)
-     */
     public void triggerDeliveryCompletion(String orderId, boolean success) {
         try {
             Map<String, Object> variables = Map.of(
@@ -24,12 +21,10 @@ public class DeliveryProcessService {
                     "orderId", orderId
             );
 
-            // In real scenario, this would be handled by the scheduled job
             log.info("Manually triggering delivery completion for order: {}, success: {}", orderId, success);
 
 
             if (!success) {
-                // Trigger delivery failure event
                 zeebeClient.newPublishMessageCommand()
                         .messageName("DeliveryFailed")
                         .correlationKey(orderId)
@@ -44,12 +39,4 @@ public class DeliveryProcessService {
         }
     }
 
-    /**
-     * Get active jobs for monitoring
-     */
-    public void checkActiveDeliveries() {
-        // This is more for monitoring purposes
-        log.info("Checking active deliveries in Camunda");
-        // Implementation would depend on your monitoring needs
-    }
 }
