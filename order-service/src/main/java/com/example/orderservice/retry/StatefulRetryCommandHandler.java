@@ -1,9 +1,8 @@
-package com.example.warehouseservice.retry;
+package com.example.orderservice.retry;
 
-import com.example.warehouseservice.command.Command;
-import com.example.warehouseservice.command.DeliveryCommandServiceImpl;
-import com.example.warehouseservice.command.dto.StartDeliveryCommand;
-import lombok.RequiredArgsConstructor;
+import com.example.orderservice.command.Command;
+import com.example.orderservice.command.dto.StartOrderCommand;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -12,18 +11,18 @@ import java.util.UUID;
 
 @Service
 @Slf4j
-@RequiredArgsConstructor
+@AllArgsConstructor
 public class StatefulRetryCommandHandler {
 
     private static final int MAX_RETRIES = 10;
 
     private final InMemoryCommandRetryRepository retryRepository;
-    private final Command deliveryCommandService;
+    private final Command orderCommandService;
 
-    public void handle(StartDeliveryCommand commandPayload) {
+    public void handle(StartOrderCommand commandPayload) {
         CommandRetryEntity retryEntity = new CommandRetryEntity(
                 UUID.randomUUID().toString(),
-                "StartDeliveryCommand",
+                "StartOrderCommand",
                 commandPayload,
                 CommandRetryEntity.RetryStatus.PENDING,
                 0,
@@ -40,7 +39,7 @@ public class StatefulRetryCommandHandler {
             retryEntity.setLastAttemptAt(LocalDateTime.now());
             retryRepository.save(retryEntity);
             log.info("Execute delivery command: {}", retryEntity.getPayload());
-            deliveryCommandService.execute(retryEntity.getPayload());
+            orderCommandService.execute(retryEntity.getPayload());
 
             retryEntity.setStatus(CommandRetryEntity.RetryStatus.COMPLETED);
             retryRepository.save(retryEntity);

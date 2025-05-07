@@ -1,11 +1,7 @@
 package com.example.warehouseservice.service.impl;
 
-import com.example.warehouseservice.command.Command;
 import com.example.warehouseservice.command.dto.StartDeliveryCommand;
-import com.example.warehouseservice.dto.ItemDto;
-import com.example.warehouseservice.dto.OrderDto;
-import com.example.warehouseservice.dto.OrderStatus;
-import com.example.warehouseservice.dto.OrderStatusUpdateEventDto;
+import com.example.warehouseservice.dto.*;
 import com.example.warehouseservice.inventory.InventoryService;
 import com.example.warehouseservice.orders.OrderService;
 import com.example.warehouseservice.orders.repository.OrderRepository;
@@ -16,8 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -164,6 +159,25 @@ public class WarehouseServiceImpl implements WarehouseService {
         }
         log.info("Publishing item request to factory: itemId={}, Quantity={}", itemDto.getItemId(), itemDto.getQuantity());
         eventPublisher.publishItemRequest(itemDto);
+    }
+
+    @Override
+    public String handleStartOrderCommand(StartOrderCommand command) {
+        if (command == null || command.getOrderId() == null) {
+            log.error("Cannot start order for null command or command with null orderId");
+            return null;
+        }
+
+        OrderDto orderDto = OrderDto.builder()
+                .orderId(command.getOrderId())
+                .deliveryLocation(command.getDeliveryLocation())
+                .status(OrderStatus.valueOf(command.getStatus()))
+                .requestedItems(new ArrayList<>())
+                .build();
+
+        processNewOrder(orderDto);
+
+        return orderDto.getOrderId();
     }
 
 }
